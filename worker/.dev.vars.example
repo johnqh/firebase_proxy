@@ -1,0 +1,8 @@
+# Copy to .dev.vars (gitignored) for local `wrangler dev`.
+# For deployed workers use `wrangler secret put <NAME>` instead.
+
+# Comma-separated Firebase Web API key(s) this proxy will serve.
+ALLOWED_API_KEYS=AIzaSy...replace-me
+
+# Comma-separated web origins for CORS, or *
+ALLOWED_ORIGINS=http://localhost:5173

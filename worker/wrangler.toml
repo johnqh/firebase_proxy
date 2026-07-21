@@ -1,0 +1,19 @@
+name = "firebase-china-proxy"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# Serve on your own domain — the workers.dev domain is blocked in China.
+routes = [
+  { pattern = "fb-api.example.com", custom_domain = true },
+]
+
+# Config values are NOT set here — keep real values out of the repo:
+#
+#   Local dev (`wrangler dev`): copy .dev.vars.example to .dev.vars (gitignored)
+#   Deployed:                   set once per environment with
+#                               `wrangler secret put ALLOWED_API_KEYS`
+#                               `wrangler secret put ALLOWED_ORIGINS`
+#
+# ALLOWED_API_KEYS  comma-separated Firebase Web API key(s)
+#                   (console -> Project settings -> Web API Key)
+# ALLOWED_ORIGINS   comma-separated web origins allowed for CORS, or "*"

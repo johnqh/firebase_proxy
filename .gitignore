@@ -1,0 +1,9 @@
+# Local config with real values — use .dev.vars.example / README as templates
+.dev.vars
+.env
+.env.*
+!.env.example
+
+# Wrangler build cache
+.wrangler/
+node_modules/
