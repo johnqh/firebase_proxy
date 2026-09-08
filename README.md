@@ -1,9 +1,9 @@
 # firebase-china-proxy
 
 Reverse proxy + client shim so Firebase **Auth**, **Remote Config**, and
-**Analytics** work for users in mainland China without a VPN. Two
-interchangeable proxy implementations (Cloudflare Worker, nginx) plus a web
-shim that reroutes the Firebase JS SDK through the proxy.
+**Analytics** work for users in mainland China without a VPN. Three
+interchangeable proxy implementations (Cloudflare Worker, Bun/Docker, nginx)
+plus a web shim that reroutes the Firebase JS SDK through the proxy.
 
 ## How it fits together
 
@@ -81,8 +81,11 @@ Local dev: `PORT=8080 bun run dev`, tests with `bun test`.
 
 1. Edit `nginx/firebase-proxy.conf`: server_name + cert paths.
 2. Drop into `/etc/nginx/conf.d/`, `nginx -t && systemctl reload nginx`.
-3. Note: nginx has no API-key allowlist here; add a `map $arg_key` check if
-   you want parity with the Worker's `ALLOWED_API_KEYS`.
+3. Set your Firebase Web API key(s) in the `map $fb_api_key $fb_key_allowed`
+   block at the top of the file, replacing `REPLACE_WITH_WEB_API_KEY`. This is
+   the nginx equivalent of `ALLOWED_API_KEYS`; unlike the other two variants it
+   is **fail-closed** — until you edit it, every keyed request gets a 403.
+   To run an open proxy deliberately, delete the `if ($fb_deny)` guards.
 
 ## Smoke test
 
@@ -159,12 +162,20 @@ shim cannot rewrite. Two options:
 
 ## Security notes
 
-- Both proxy variants refuse requests whose `key`/`x-goog-api-key` isn't in
-  `ALLOWED_API_KEYS`, so they can't be used as a general googleapis proxy.
-  Leaving `ALLOWED_API_KEYS` unset or empty switches to **open mode**: any
-  Firebase project's traffic is forwarded. Use that only when you knowingly
-  want a shared proxy for many projects — open relays get abused, and abuse
-  burns the IP/domain reputation your China reachability depends on.
+- All three proxy variants refuse requests whose `key`/`x-goog-api-key` isn't
+  allowlisted, so they can't be used as a general googleapis proxy. The default
+  when unconfigured differs, so check the one you deploy:
+  - Worker and Bun: leaving `ALLOWED_API_KEYS` unset or empty is **open mode**
+    — any Firebase project's traffic is forwarded.
+  - nginx: **fail-closed** — the allowlist is a literal `map` in the config, so
+    an unedited file rejects every keyed request.
+
+  Open mode is only for a knowingly shared proxy — open relays get abused, and
+  abuse burns the IP/domain reputation your China reachability depends on.
+- The key check deliberately exempts `OPTIONS`: a CORS preflight carries no
+  custom headers, so it cannot present `x-goog-api-key` (which is how
+  Installations authenticates). Preflights are answered before the check in all
+  three variants.
 - Cookies are stripped before forwarding; Firebase's web SDKs don't need them.
 - If you self-load gtag.js through `/gtm`, note that Subresource Integrity
   (`integrity="sha384-..."`) can't be used: Google rotates the script's

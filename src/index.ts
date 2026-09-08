@@ -34,13 +34,15 @@ async function handle(request: Request): Promise<Response> {
     process.env.ALLOWED_ORIGINS
   );
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: cors });
-  }
-
   const target = resolveTarget(url.pathname, url.search);
   if (!target) {
     return new Response('not found', { status: 404 });
+  }
+
+  // Answered before the key check: a CORS preflight carries no custom headers,
+  // so it cannot present x-goog-api-key.
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: cors });
   }
 
   if (

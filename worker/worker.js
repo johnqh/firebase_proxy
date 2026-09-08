@@ -31,6 +31,11 @@ const KEYED_PREFIXES = new Set(['identitytoolkit', 'securetoken', 'remoteconfig'
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (url.pathname === '/health') {
+      return Response.json({ status: 'ok' });
+    }
+
     const slash = url.pathname.indexOf('/', 1);
     const prefix = url.pathname.slice(1, slash === -1 ? undefined : slash);
     const upstream = UPSTREAMS[prefix];

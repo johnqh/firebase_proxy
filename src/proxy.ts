@@ -1,6 +1,17 @@
 /**
  * Pure proxy logic shared by the Bun server (src/index.ts).
- * Mirrors the Cloudflare Worker in worker/worker.js — keep the two in sync.
+ *
+ * The Cloudflare Worker (worker/worker.js) implements the same path contract,
+ * key allowlist, and CORS behaviour — keep those in sync. Two differences are
+ * intentional, because the runtimes differ:
+ *
+ *   - Header stripping: Bun also drops `accept-encoding` (and deletes
+ *     `content-encoding`/`content-length` on the way back) because Bun's
+ *     fetch() transparently decompresses, which would leave the re-served
+ *     response mislabelled. Workers stream the encoded body through untouched,
+ *     so the Worker must not strip these.
+ *   - `host`/`connection` are dropped here; the Workers runtime manages both
+ *     itself, so the Worker leaves them alone.
  */
 
 export const UPSTREAMS: Record<string, string> = {

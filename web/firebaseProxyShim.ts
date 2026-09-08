@@ -30,6 +30,15 @@ const HOST_TO_PREFIX: Record<string, string> = {
   'analytics.google.com': 'ga',
 };
 
+/**
+ * Probe URL: a Google host blocked alongside the Firebase endpoints but
+ * deliberately NOT in HOST_TO_PREFIX, so the probe always measures the direct
+ * route even when installFirebaseProxy() has already patched fetch. Probing a
+ * mapped host would rewrite the probe through the proxy and always report
+ * "reachable".
+ */
+const PROBE_URL = 'https://www.googleapis.com/generate_204';
+
 let installed = false;
 
 export function installFirebaseProxy(proxyOrigin: string): void {
@@ -73,12 +82,15 @@ export function installFirebaseProxy(proxyOrigin: string): void {
  * Quick reachability probe for Google endpoints. Resolves true if the network
  * path works (an opaque no-cors response still counts), false on timeout or
  * network error — i.e. false means "behind the block, install the proxy".
+ *
+ * Safe to call before or after installFirebaseProxy(): PROBE_URL is not a
+ * proxied host, so the shim never rewrites it.
  */
 export async function isFirebaseReachable(timeoutMs = 3000): Promise<boolean> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    await fetch('https://firebaseinstallations.googleapis.com/generate_204', {
+    await fetch(PROBE_URL, {
       mode: 'no-cors',
       cache: 'no-store',
       signal: ctrl.signal,
